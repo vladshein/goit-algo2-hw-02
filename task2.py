@@ -27,9 +27,46 @@ def optimize_printing(print_jobs: List[Dict], constraints: Dict) -> Dict:
     Returns:
         Dict з порядком друку та загальним часом
     """
-    # Тут повинен бути ваш код
 
-    return {"print_order": None, "total_time": None}
+    if not print_jobs:
+        return {"print_order": [], "total_time": 0}
+
+    total_time = 0
+    print_order = []
+    current_group = []
+    current_volume = 0.0
+    groups: List[List[PrintJob]] = []
+
+    printer_constraints = PrinterConstraints(**constraints)
+    jobs_list = [PrintJob(**job) for job in print_jobs]
+
+    if printer_constraints.max_volume <= 0 or printer_constraints.max_items <= 0:
+        return {"print_order": [], "total_time": 0}
+
+    sorted_jobs = sorted(jobs_list, key=lambda job: job.priority)
+
+    print(sorted_jobs)
+    print(printer_constraints.max_items, printer_constraints.max_volume)
+
+    for job in sorted_jobs:
+        if (
+            len(current_group) < printer_constraints.max_items
+            and current_volume + job.volume <= printer_constraints.max_volume
+        ):
+            current_group.append(job)
+            current_volume += job.volume
+        else:
+            total_time += max(j.print_time for j in current_group)
+            print_order.extend(j.id for j in current_group)
+            print(current_group)
+            current_group = [job]
+            current_volume = job.volume
+
+    if current_group:
+        total_time += max(j.print_time for j in current_group)
+        print_order.extend(j.id for j in current_group)
+
+    return {"print_order": print_order, "total_time": total_time}
 
 
 # Тестування
